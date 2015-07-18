@@ -10,9 +10,59 @@
 
 #include "Cartridge.h"
 
-//const long Cartridge::LENGTH_DEFAULT = 200000;
-//const byte Cartridge::TEMPERATURE_DEFAULT_FIRST = 0x5F;
-//const byte Cartridge::TEMPERATURE_DEFAULT_PRINT = 0x55;
+
+Material::Type & operator--(Material::Type & material) 
+{ 
+  if(material > Material::PLA)
+  {
+    int val = static_cast<int>(material);
+    --val;
+    material = Material::Type(val);
+  }
+  return material; 
+} 
+
+Material::Type & operator++(Material::Type & material) 
+{ 
+  if(material < Material::PVA)
+  {
+    int val = static_cast<int>(material);
+    ++val;
+    material = Material::Type(val);
+  }
+  return material; 
+}
+
+ColorEnum::Type & operator--(ColorEnum::Type & color) 
+{ 
+  if(color > ColorEnum::black)
+  {
+    int val = static_cast<int>(color);
+    --val;
+    color = ColorEnum::Type(val);
+  }
+  else
+  {
+    color = ColorEnum::pink;
+  }
+  return color; 
+} 
+
+ColorEnum::Type & operator++(ColorEnum::Type & color) 
+{
+  if(color < ColorEnum::pink)
+  { 
+    int val = static_cast<int>(color);
+    ++val;
+    color = ColorEnum::Type(val);
+  }
+  else
+  {
+    color = ColorEnum::black;
+  }
+  return color; 
+}
+
   
 CartridgeData::CartridgeData(int id) :
     id_(id),
@@ -22,10 +72,10 @@ CartridgeData::CartridgeData(int id) :
     red_(0xFF),
     green_(0xFF),
     blue_(0xFF),
-    initLen_(200000/*Cartridge::LENGTH_DEFAULT*/),
+    initLen_(200000),
     usedLen_(0),
-    tempPrint_(0x5F/*Cartridge::TEMPERATURE_DEFAULT_PRINT*/),
-    tempFirst_(0x55/*Cartridge::TEMPERATURE_DEFAULT_FIRST*/),
+    tempPrint_(0x5F),
+    tempFirst_(0x55),
     date_(0x0217),
     xor_(0)
 {  
@@ -61,16 +111,36 @@ Cartridge::Cartridge(int id, int eepromLoc) : data_(id),
 
 /// Return a color string based upon the color enum
 String
-Cartridge::getMaterial(Material::Type material)
+Cartridge::getMaterialStr()
 {
-  return Materials[material];
+  return Materials[data_.material_];
 }
 
+Material::Type
+Cartridge::nextMaterial()
+{
+  Material::Type material = data_.material_;
+  ++material;
+  data_.material_ = material;
+  return material;  
+}
+
+Material::Type
+Cartridge::prevMaterial()
+{
+  Material::Type material = data_.material_;
+  --material;
+  data_.material_ = material;
+  return material;  
+}
 
 /// Return a color string based upon the color enum
 String
-Cartridge::getColor(ColorEnum::Type color)
+Cartridge::getColorStr()
 {
+  ColorEnum::Type color = getColor(data_.red_,
+                                   data_.green_,
+                                   data_.blue_);
   return Colors[color];
 }
 
@@ -212,5 +282,25 @@ Cartridge::setColor(byte red, byte green, byte blue)
   data_.red_ = red;
   data_.green_ = green;
   data_.blue_ = blue;
+}
+
+// Set the next color
+ColorEnum::Type
+Cartridge::nextColor()
+{  
+  ColorEnum::Type color = getColor(data_.red_, data_.green_, data_.blue_);
+  ++color;
+  setColor(color);
+  return color;
+}
+
+// Set the previous color
+ColorEnum::Type
+Cartridge::prevColor()
+{  
+  ColorEnum::Type color = getColor(data_.red_, data_.green_, data_.blue_);
+  --color;
+  setColor(color);
+  return color;
 }
 

@@ -312,8 +312,8 @@ Rfid::handleRequest(RfidCommand::Type funcCode, byte * preq, int len)
       }
       else if(page == 8)
       {
-        cartridge_.data_.initLen_ |= ((long)preq[1])>>4;
-        cartridge_.data_.usedLen_  = ((long)preq[1])<<16;
+        cartridge_.data_.initLen_ |= ((long)preq[1]&0xF0)>>4;
+        cartridge_.data_.usedLen_  = ((long)preq[1]&0x0F)<<16;
         cartridge_.data_.usedLen_ |= ((long)preq[2])<<8;
         cartridge_.data_.usedLen_ |= ((long)preq[3]); 
         cartridge_.data_.tempPrint_ = preq[4];

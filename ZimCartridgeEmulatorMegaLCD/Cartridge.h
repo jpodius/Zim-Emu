@@ -106,21 +106,24 @@ public:
 class Cartridge
 { 
 public:
-  //static const long LENGTH_DEFAULT;
-  //static const byte TEMPERATURE_DEFAULT_FIRST;
-  //static const byte TEMPERATURE_DEFAULT_PRINT;
 
   Cartridge(int id, int eepromLoc);
-  String getMaterial(Material::Type material);
-  String getColor(ColorEnum::Type color);
+  String getMaterialStr();
+  Material::Type nextMaterial();
+  Material::Type prevMaterial();
+  String getColorStr();
   ColorEnum::Type getColor(byte red, byte green, byte blue);
   void setColor(ColorEnum::Type color); 
   void setColor(byte red, byte green, byte blue);  
+  ColorEnum::Type nextColor();
+  ColorEnum::Type prevColor();
+
   
   CartridgeData       data_;
   int                 eepromLoc_;
   static const char*  Materials[];
   static const char*  Colors[];
+
 };
 
 #endif

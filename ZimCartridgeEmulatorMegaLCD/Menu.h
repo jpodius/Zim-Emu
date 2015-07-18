@@ -85,12 +85,9 @@ public:
   void onButtonReleased(ButtonEnum::Type button);
   void incSelected(ItemSelectedEnum::Type item);
   void decSelected(ItemSelectedEnum::Type item);
-  void saveSelected(ItemSelectedEnum::Type item);
   void showSelected(ItemSelectedEnum::Type item, bool edit = false);
   
 private:  
-  void readCartridgeParams();
-
   int                         adcSample_;
   int                         adcRead_;
   FilamentSelectedEnum::Type  filament_;
@@ -107,14 +104,6 @@ private:
   Rfid * pLeft_;
   Rfid * pRight_;
   Rfid * pSelected_;
-  
-  // Editable cartridge parameters
-  ColorEnum::Type color_;
-  Material::Type  material_;
-  long            initialLength_;
-  long            usedLength_;
-  byte            temperature_;    
-  byte            temperatureFirst_;
 };
 
 #endif

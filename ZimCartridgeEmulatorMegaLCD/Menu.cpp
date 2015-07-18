@@ -38,57 +38,6 @@ ItemSelectedEnum::Type & operator++(ItemSelectedEnum::Type & selected)
   return selected; 
 }
 
-ColorEnum::Type & operator--(ColorEnum::Type & color) 
-{ 
-  if(color > ColorEnum::black)
-  {
-    int val = static_cast<int>(color);
-    --val;
-    color = ColorEnum::Type(val);
-  }
-  else
-  {
-    color = ColorEnum::pink;
-  }
-  return color; 
-} 
-
-ColorEnum::Type & operator++(ColorEnum::Type & color) 
-{
-  if(color < ColorEnum::pink)
-  { 
-    int val = static_cast<int>(color);
-    ++val;
-    color = ColorEnum::Type(val);
-  }
-  else
-  {
-    color = ColorEnum::black;
-  }
-  return color; 
-}
-
-Material::Type & operator--(Material::Type & material) 
-{ 
-  if(material > Material::PLA)
-  {
-    int val = static_cast<int>(material);
-    --val;
-    material = Material::Type(val);
-  }
-  return material; 
-} 
-
-Material::Type & operator++(Material::Type & material) 
-{ 
-  if(material < Material::PVA)
-  {
-    int val = static_cast<int>(material);
-    ++val;
-    material = Material::Type(val);
-  }
-  return material; 
-}
 
 const byte Menu::TEMPERATURE_MAX = 250;
 const byte Menu::TEMPERATURE_MIN = 150;
@@ -97,7 +46,7 @@ const uint8_t Menu::BUTTON_PORT = 0;
 const unsigned long Menu::HOLD_EVENTS_START = 1200;
 const unsigned long Menu::HOLD_EVENTS_MAX = 600;
 const unsigned long Menu::HOLD_EVENTS_MIN = 50;
-const long Menu::FILAMENT_LENGTH_MAX = 600000;
+const long Menu::FILAMENT_LENGTH_MAX = 200000;//600000;
 
 /// Ctor
 Menu::Menu(Rfid * pLeft, Rfid * pRight) : 
@@ -114,13 +63,13 @@ Menu::Menu(Rfid * pLeft, Rfid * pRight) :
                                 refresh_(true),
                                 pLeft_(pLeft),
                                 pRight_(pRight),
-                                pSelected_(pLeft),
-                                color_(ColorEnum::white),
-                                material_(Material::PLA),
-                                initialLength_(0),
-                                usedLength_(0),
-                                temperature_(0),
-                                temperatureFirst_(0)                                          
+                                pSelected_(pLeft)
+//                                color_(ColorEnum::white),
+//                                material_(Material::PLA),
+//                                initialLength_(0),
+//                                usedLength_(0),
+//                                temperature_(0),
+//                                temperatureFirst_(0)                                          
 {  
 }
 
@@ -140,7 +89,7 @@ Menu::init()
 void Menu::updateLcd()
 {
   Serial.println("Updating lcd");
-  readCartridgeParams();
+  //readCartridgeParams();
   showSelected(item_, edit_);
 }
 
@@ -251,14 +200,14 @@ void Menu::onButtonPressed(ButtonEnum::Type button)
       filament_ = FilamentSelectedEnum::left;
       refresh_ = true;
       pSelected_ = pLeft_;
-      readCartridgeParams();
+      //readCartridgeParams();
       break;
     
     case ButtonEnum::right:
       filament_ = FilamentSelectedEnum::right;
       refresh_ = true;
       pSelected_ = pRight_;
-      readCartridgeParams();
+     // readCartridgeParams();
       break;
 
     case ButtonEnum::up:
@@ -285,7 +234,7 @@ void Menu::onButtonPressed(ButtonEnum::Type button)
       if(edit_)
       { 
         // Select pressed while editing an item
-        //saveSelected(item_);
+        pSelected_->saveCartridgeData();
         edit_ = false;
       }
       else if(item_ != ItemSelectedEnum::unused)
@@ -344,38 +293,43 @@ void Menu::incSelected(ItemSelectedEnum::Type item)
   switch(item)
   {
     case ItemSelectedEnum::color:
-      ++color_;
+      pSelected_->cartridge_.nextColor();
       break;
 
     case ItemSelectedEnum::type:
-      ++material_;
+      //++material_;
+      pSelected_->cartridge_.nextMaterial();
       break;
 
     case ItemSelectedEnum::temp:
-      if((temperature_+TEMPERATURE_OFFSET) < TEMPERATURE_MAX)
-        ++temperature_;
+      if((pSelected_->cartridge_.data_.tempPrint_+TEMPERATURE_OFFSET) < TEMPERATURE_MAX)
+      {
+        pSelected_->cartridge_.data_.tempPrint_++;
+      }
       break;
 
     case ItemSelectedEnum::tempFirst:
-      if((temperatureFirst_+TEMPERATURE_OFFSET) < TEMPERATURE_MAX)
-        ++temperatureFirst_;
+      if((pSelected_->cartridge_.data_.tempFirst_+TEMPERATURE_OFFSET) < TEMPERATURE_MAX)
+      {
+        pSelected_->cartridge_.data_.tempFirst_++;
+      }
       break;      
       
     case ItemSelectedEnum::len:
-      if(initialLength_ < FILAMENT_LENGTH_MAX)
+      if(pSelected_->cartridge_.data_.initLen_ < FILAMENT_LENGTH_MAX)
       {      
-        initialLength_ += 1000;
-        if(initialLength_ > FILAMENT_LENGTH_MAX)
-          initialLength_ = FILAMENT_LENGTH_MAX;
+        pSelected_->cartridge_.data_.initLen_ += 1000;
+        if(pSelected_->cartridge_.data_.initLen_ > FILAMENT_LENGTH_MAX)
+          pSelected_->cartridge_.data_.initLen_ = FILAMENT_LENGTH_MAX;
       }
       break;
 
     case ItemSelectedEnum::used:
-      if(usedLength_ < FILAMENT_LENGTH_MAX)   
+      if(pSelected_->cartridge_.data_.usedLen_ < FILAMENT_LENGTH_MAX)   
       {   
-        usedLength_ += 1000;    
-        if(usedLength_ > FILAMENT_LENGTH_MAX)
-          usedLength_ = FILAMENT_LENGTH_MAX;
+        pSelected_->cartridge_.data_.usedLen_ += 1000;    
+        if(pSelected_->cartridge_.data_.usedLen_ > FILAMENT_LENGTH_MAX)
+          pSelected_->cartridge_.data_.usedLen_ = FILAMENT_LENGTH_MAX;
       }
       break;
 
@@ -391,80 +345,53 @@ void Menu::decSelected(ItemSelectedEnum::Type item)
   switch(item)
   {
     case ItemSelectedEnum::color:
-      --color_;
+      pSelected_->cartridge_.prevColor();
       break;
 
     case ItemSelectedEnum::type:
-      --material_;
+      pSelected_->cartridge_.prevMaterial();
       break;
 
     case ItemSelectedEnum::temp:
-      if((temperature_+TEMPERATURE_OFFSET) > TEMPERATURE_MIN)
-        --temperature_;
+      if((pSelected_->cartridge_.data_.tempPrint_+TEMPERATURE_OFFSET) > TEMPERATURE_MIN)
+      {
+        pSelected_->cartridge_.data_.tempPrint_--;
+      }
       break;
 
     case ItemSelectedEnum::tempFirst:
-      if((temperatureFirst_+TEMPERATURE_OFFSET) > TEMPERATURE_MIN)      
-        --temperatureFirst_;
+      if((pSelected_->cartridge_.data_.tempFirst_+TEMPERATURE_OFFSET) > TEMPERATURE_MIN)      
+      {
+        pSelected_->cartridge_.data_.tempFirst_--;
+      }
       break;       
 
     case ItemSelectedEnum::len:
-      if(initialLength_ > 0)
+      if(pSelected_->cartridge_.data_.initLen_ > 0)
       {      
-        initialLength_ -= 1000;
-        if(initialLength_ < 0)
-          initialLength_ = 0;
+        pSelected_->cartridge_.data_.initLen_ -= 1000;
+        if(pSelected_->cartridge_.data_.initLen_ < 0)
+        {
+          pSelected_->cartridge_.data_.initLen_ = 0;
+        }
       }
       break;
 
     case ItemSelectedEnum::used:
-      if(usedLength_ > 0)      
-        usedLength_ -= 1000;
-        if(usedLength_ < 0)
-          usedLength_ = 0;   
+      if(pSelected_->cartridge_.data_.usedLen_ > 0)
+      {     
+        pSelected_->cartridge_.data_.usedLen_ -= 1000;
+        if(pSelected_->cartridge_.data_.usedLen_ < 0)
+        {
+          pSelected_->cartridge_.data_.usedLen_ = 0;   
+        }
+      }
       break;
 
     default:
       break;
   }
   updateLcd();
-}
-
-/// Save the selected item
-void Menu::saveSelected(ItemSelectedEnum::Type item)
-{
-  switch(item)
-  {
-    case ItemSelectedEnum::color:
-      pSelected_->cartridge_.setColor(color_);
-      pSelected_->saveCartridgeData();
-      break;
-
-    case ItemSelectedEnum::type:
-      pSelected_->cartridge_.data_.material_ = material_;
-      pSelected_->saveCartridgeData();
-      break;
-
-    case ItemSelectedEnum::temp:
-      pSelected_->cartridge_.data_.tempPrint_ = temperature_;
-      pSelected_->saveCartridgeData();
-      break;
-
-    case ItemSelectedEnum::tempFirst:
-      pSelected_->cartridge_.data_.tempFirst_ = temperatureFirst_;
-      pSelected_->saveCartridgeData();
-      break;       
-
-    case ItemSelectedEnum::len:
-      break;
-
-    case ItemSelectedEnum::used:
-      break;
-
-    default:
-      break;
-  }
-  //updateLcd();
 }
 
 /// Show the selected item on the LCD
@@ -487,30 +414,30 @@ Menu::showSelected(ItemSelectedEnum::Type item, bool edit)
   {
     case ItemSelectedEnum::color:
       lcd.print("Color:");
-      lcd.print(pSelected_->cartridge_.getColor(color_));
+      lcd.print(pSelected_->cartridge_.getColorStr());
       break;
 
     case ItemSelectedEnum::type:
       lcd.print("Type:");
-      lcd.print(pSelected_->cartridge_.getMaterial(material_));
+      lcd.print(pSelected_->cartridge_.getMaterialStr());
       break;
 
     case ItemSelectedEnum::temp:
       lcd.print("Temp:");
-      lcd.print(temperature_ + TEMPERATURE_OFFSET);      
+      lcd.print(pSelected_->cartridge_.data_.tempPrint_ + TEMPERATURE_OFFSET);      
       lcd.print("C");
       break;
 
     case ItemSelectedEnum::tempFirst:
       lcd.print("TempFirst:");
-      lcd.print(temperatureFirst_ + TEMPERATURE_OFFSET);
+      lcd.print(pSelected_->cartridge_.data_.tempFirst_ + TEMPERATURE_OFFSET);
       lcd.print("C");
       break;       
 
     case ItemSelectedEnum::len:
       {
         lcd.print("Length:");
-        float len = initialLength_/1000.0;
+        float len = pSelected_->cartridge_.data_.initLen_/1000.0;
         lcd.print(len);
         lcd.print("m");
       }
@@ -519,7 +446,7 @@ Menu::showSelected(ItemSelectedEnum::Type item, bool edit)
     case ItemSelectedEnum::used:
       {
         lcd.print("Used:");
-        float len = usedLength_/1000.0;
+        float len = pSelected_->cartridge_.data_.usedLen_/1000.0;
         lcd.print(len);
         lcd.print("m");
       }
@@ -528,7 +455,7 @@ Menu::showSelected(ItemSelectedEnum::Type item, bool edit)
     case ItemSelectedEnum::unused:
       {
         lcd.print("Unused:");
-        float len = (initialLength_ - usedLength_)/1000.0;
+        float len = (pSelected_->cartridge_.data_.initLen_ - pSelected_->cartridge_.data_.usedLen_)/1000.0;
         lcd.print(len);
         lcd.print("m");
       }
@@ -542,23 +469,6 @@ Menu::showSelected(ItemSelectedEnum::Type item, bool edit)
     lcd.print("*");
 }
 
-
-
-
-
-/// Read the cartridge parameters for the selected cartridge
-void
-Menu::readCartridgeParams()
-{
-    color_            = pSelected_->cartridge_.getColor(pSelected_->cartridge_.data_.red_,
-                                                        pSelected_->cartridge_.data_.green_,
-                                                        pSelected_->cartridge_.data_.blue_);
-    material_         = pSelected_->cartridge_.data_.material_;
-    initialLength_    = pSelected_->cartridge_.data_.initLen_;
-    usedLength_       = pSelected_->cartridge_.data_.usedLen_;                      
-    temperature_      = pSelected_->cartridge_.data_.tempPrint_;
-    temperatureFirst_ = pSelected_->cartridge_.data_.tempFirst_;
-}
 
 
 
